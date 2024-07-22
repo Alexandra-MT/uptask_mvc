@@ -1,5 +1,6 @@
 @use 'base/variables' as v;
 
+
 /** Media Queries **/
 @mixin telefono {
     @media (min-width: v.$telefono) {
@@ -31,6 +32,7 @@
     text-align: center;
     display: block;
     width: 100%;
+    margin: 5rem auto 0 auto;
     @include tablet {
         width: auto;
     }
@@ -44,4 +46,28 @@
     display: grid;
     gap: $espaciado;
     grid-template-columns: repeat($columnas, 1fr);
+}
+
+@mixin textoDegradado($color){
+    background: -webkit-linear-gradient(bottom left, red 20px, $color, green, blue 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: tomato; 
+    font-size:7rem;
+    text-align: center;
+
+    @include tablet{
+        font-size:10rem;
+    }
+}
+
+@mixin tagline($color){
+    font-family: v.$fuente_headings; 
+    font-weight: 900;
+    background: -webkit-linear-gradient(bottom left, red 20px, $color, green, blue 90%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: tomato;   
+    font-size: 3rem;
+    text-align: center;
 }

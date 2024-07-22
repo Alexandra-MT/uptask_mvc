@@ -7,6 +7,10 @@ h1, h2, h3 {
 }
 h1 {
     font-size: 6rem;
+    //background: -webkit-linear-gradient(blue,red);
+    //-webkit-background-clip: text;
+    //-webkit-text-fill-color: transparent;
+    //color: tomato;  
 }
 h2 {
     font-size: 5rem;
@@ -19,3 +23,18 @@ p {
     color: v.$gris;
     line-height: 1.8;
 }
+.tagline{
+    font-family: v.$fuente_headings; 
+    font-weight: 900;
+    background: -webkit-linear-gradient(blue,red);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: tomato;   
+    font-size: 3rem;
+    text-align: center;
+}
+
+.descripcion-pagina{
+    text-align: center;
+}
+

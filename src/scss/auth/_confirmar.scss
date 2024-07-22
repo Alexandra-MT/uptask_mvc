@@ -1,0 +1,19 @@
+@use 'base/variables' as v;
+@use 'base/mixins' as m;
+
+.confirmar{
+    margin-top:5rem;
+    .uptask{
+        @include m.textoDegradado(v.$indigo);
+    }
+    .tagline{
+        @include m.tagline(v.$indigo);
+    }
+    .acciones{
+        justify-content: center;
+        a{
+            color:darken(v.$indigo,10%);
+            //margin:0 auto;
+        }
+    }
+}
