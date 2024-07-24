@@ -25,7 +25,17 @@ class Usuario extends ActiveRecord{
         
     }
 
-    public function validar(){
+    public function validarLogin(){
+        if(!$this->email || !filter_var($this->email, FILTER_VALIDATE_EMAIL)){
+            self::setAlerta('error', 'El email no tiene un formato válido');
+        }
+        if(!$this->password){
+            self::setAlerta('error', 'El Password no puede ir vacio');
+        }
+        return self::getAlertas();
+    }
+
+    public function validarCuentaNueva(){
         if(!$this->nombre){
             self::setAlerta('error', 'El Nombre es Obligatorio');
         }
@@ -40,6 +50,26 @@ class Usuario extends ActiveRecord{
         }
         if($this->password !== $this->password2){
             self::setAlerta('error', 'Los password son diferentes');
+        }
+        return self::getAlertas();
+    }
+    
+    public function validarEmail(){
+        if(!$this->email){
+            self::setAlerta('error', 'El email es obligatorio');
+        }
+        if(!filter_var($this->email, FILTER_VALIDATE_EMAIL)){
+            self::setAlerta('error', 'El email no tiene un formato valido');
+        }
+        return self::getAlertas();
+    }
+
+    public function validarPass(){
+        if(!$this->password){
+            self::setAlerta('error' , 'El password es obligatorio');
+        }
+        if(strlen($this->password) < 6){
+            self::setAlerta('error' , 'El password debe contener al menos 6 caracteres');
         }
         return self::getAlertas();
     }

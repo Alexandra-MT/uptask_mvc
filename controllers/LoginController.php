@@ -8,14 +8,30 @@ use Model\Usuario;
 
 class LoginController{
     public static function login(Router $router){
-        
+        $alertas = [];
+        //$auth = new Usuario;
+        if($_SERVER['REQUEST_METHOD'] === 'POST'){
+            //sincronizamos con post
+            $usuario = new Usuario($_POST);
+            //$auth->sincronizar($_POST);
 
-       if($_SERVER['REQUEST_METHOD'] === 'POST'){
+            //validamos
+            $alertas = $usuario->validarLogin();
 
+            if(empty($alertas)){
+                //comprobar si existe el usuario
+                $usuario = Usuario::where('email' , $usuario->email);
+                
+                if(!$usuario){
+                    Usuario::setAlerta('error', 'El usuario no existe');
+                }
+            }
        }
+       $alertas = Usuario::getAlertas();
 
        $router->render('auth/login', [
             'titulo' => 'Iniciar sesión',
+            'alertas' => $alertas
        ]);
     }
 
@@ -30,7 +46,7 @@ class LoginController{
         if($_SERVER['REQUEST_METHOD'] === 'POST'){
             //se podria validar los password aqui pero no es recomendable
             $usuario->sincronizar($_POST);
-            $alertas = $usuario->validar();
+            $alertas = $usuario->validarCuentaNueva();
             //debuguear($alertas);
 
             if(empty($alertas)){
@@ -76,24 +92,81 @@ class LoginController{
     }
 
     public static function olvide(Router $router){
+        $alertas = [];
 
        if($_SERVER['REQUEST_METHOD'] === 'POST'){
+            $usuario = new Usuario($_POST);
+            $alertas = $usuario->validarEmail();
 
+            if(empty($alertas)){
+                $usuario = Usuario::where('email', $usuario->email);
+                if($usuario && $usuario->confirmado) {//=== "1" dara true ==1)
+                   //generar nuevo token
+                    unset($usuario->password2); //es opcional quitarlo ya que en las columnasDB no aparece, no dara error al guardar en ddbb
+                    $usuario->token();
+                    //actualizar usuario
+                    $usuario->guardar();
+                    //enviar un email
+                    $email = new Email($usuario->email, $usuario->nombre, $usuario->token);
+                    $email->enviarInstrucciones();
+                    //imprimir alerta
+                    Usuario::setAlerta('exito', 'Hemos enviado las instrucciones a tu email');
+                }else{
+                    Usuario::setAlerta('error', 'El usuario no existe o no esta confirmado');
+                }
+            }
        }
+
+       $alertas = Usuario::getAlertas();
 
        $router->render('auth/olvide', [
         'titulo' => 'Olvide mi Password',
+        'alertas' => $alertas,
          ]);
     }
 
     public static function reestablecer(Router $router){
-        
+        //token
+        $token = s($_GET['token']);
+        //creamos una variable para que desaparezca el campo de password una vez validado
+        $mostrar = true;
+        if(!$token) header('Location: /');
+        //identificar el usuario
+        $usuario = Usuario::where('token' , $token);
+        if(empty($usuario)){
+            Usuario::setAlerta('error' , 'Token no valido');
+            $mostrar = false;
+        }
+        $alertas = [];
+            if($_SERVER['REQUEST_METHOD'] === 'POST'){
+                unset($usuario->password2);
+                //añadir un nuevo password
+                $usuario->sincronizar($_POST);
+                //validar password
+                $alertas = $usuario->validarPass();
+            
+                if(empty($alertas)){
+                    //hashear password
+                    $usuario->hashPassword();
+                    //eliminar el token
+                    $usuario->token = null;
+                    //guardar el usuario
+                    $resultado = $usuario->guardar();
+                    //redireccionamos
+                    if($resultado){
+                        header('Location: /');
+                    }else{
+                        Usuario::setAlerta('error', 'Hubo un error, por favor intentelo más tarde');
+                    }
+                }
+            }
 
-       if($_SERVER['REQUEST_METHOD'] === 'POST'){
+        $alertas = Usuario::getAlertas();
 
-       }
-       $router->render('auth/reestablecer', [
+        $router->render('auth/reestablecer', [
         'titulo' => 'Reestablecer Password',
+        'alertas' => $alertas,
+        'mostrar' => $mostrar
          ]);
     }
 
