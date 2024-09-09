@@ -1,0 +1,15 @@
+@use 'base/variables' as v;
+@use 'base/mixins' as m;
+
+.dashboard {
+    background-color: v.$gris-claro;
+
+    @include m.tablet{
+        display:flex;
+        height:100vh;//viewport height , altura de la pantalla a 100% de arriba abajo
+    }
+
+    .principal{
+        flex:1;
+    }
+}
