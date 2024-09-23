@@ -16,6 +16,10 @@
         font-size:1.6rem;
         font-weight: 700;
         color:v.$indigo;
+        margin-bottom: 1rem;
+        @include m.tablet{
+            margin-bottom: 0;  
+        }
     }
 
     .cerrar-sesion{

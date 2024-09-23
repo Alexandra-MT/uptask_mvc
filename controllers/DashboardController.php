@@ -14,8 +14,13 @@ class DashboardController{
         //proteger la ruta 
         isAuth();
 
+        //mostrar los proyectos
+        $id = $_SESSION['id'];
+        $proyectos = Proyecto::belongsTo('propietarioId', $id);
+
         $router->render('dashboard/index',[
-            'titulo' => 'Proyectos'
+            'titulo' => 'Proyectos',
+            'proyectos' => $proyectos
         ]);
     }
 
@@ -60,14 +65,20 @@ class DashboardController{
         session_start();
         isAuth();
 
+        //url con get
         $url = $_GET['url']; // registramos el url del proyecto
-        $urlBBDD = Proyecto::where('url', $url); //comparamos el url del get y el url de bbdd
-        //debuguear($urlBBDD);
+        //url desde la BBDD
+        $proyectoBBDD = Proyecto::where('url', $url); //comparamos el url del get y el url de bbdd
+        //debuguear($proyectoBBDD);
         //revisar que la persona que visita el proyecto es quien lo creo
-        if(!$url || is_null($urlBBDD)) header('Location:/dashboard');
+        if(!$url || is_null($proyectoBBDD)) header('Location:/dashboard');
         
+        //si el id de la bbdd no coincide con el id de la session
+        if($proyectoBBDD->propietarioId !== $_SESSION['id']){
+            header('Location:/dashboard');
+        }
         $router->render('dashboard/proyecto',[
-            'titulo' => 'Nombre Proyecto'
+            'titulo' => $proyectoBBDD->proyecto
         ]);
     }
 
