@@ -2,6 +2,10 @@
 (function(){
 
     obtenerTareas();
+    //la variable tareas existe solo en la funcion obtenerTareas()
+    //por lo tanto la funcion de agragar tarea no conoce el contenido de las tareas
+    //se crea un variable global
+    let tareas = [];
     //boton modal agragar tarea
     const nuevaTareaBtn = document.querySelector('#agregar-tarea');
     nuevaTareaBtn.addEventListener('click', mostrarFormulario);
@@ -14,16 +18,21 @@
             const resultado = await respuesta.json();
 
             //console.log(resultado.tareas);
+            //reemplazamos con la variable global
+            //const {tareas} = resultado;
 
-            const {tareas} = resultado;
+            tareas = resultado.tareas;// asi esta global de tareas estara disponible para todas las funciones
+            mostrarTareas();
             //console.log(tareas);
-            mostrarTareas(tareas);
+            //mostrarTareas(tareas); ya no hace falta mostrar las tareas porque ya estan en la global
        } catch (error) {
             console.log(error);
        }
     }
 
-    function mostrarTareas(tareas){
+    function mostrarTareas(){ //(tareas) pero como ya es global no se necesita
+        //para que no se dupliquen las tareas, debemos limpiar el html
+        limpiarTareas();
         if(tareas.length === 0){
             //si no hay tareas
             const contenedorTareas = document.querySelector('#listado-tareas');
@@ -32,8 +41,53 @@
             textoNoTareas.classList.add('no-tareas');
 
             contenedorTareas.appendChild(textoNoTareas);
-
+            return;//para no poner un else
         }
+        //crear un objeto estados
+        const estados = {
+            0 : 'Pendiente',
+            1 : 'Completa'
+        }
+
+        tareas.forEach(tarea => {
+            const contenedorTarea = document.createElement('LI');
+            contenedorTarea.dataset.tareaId = tarea.id;// lo hemos sacado del objeto
+            contenedorTarea.classList.add('tarea');
+
+            const nombreTarea = document.createElement('P');
+            nombreTarea.textContent = tarea.nombre;
+
+            const opcionesDiv = document.createElement('DIV');
+            opcionesDiv.classList.add('opciones');//estilos Css
+
+            //Botones
+            const btnEstadoTarea = document.createElement('BUTTON');
+            btnEstadoTarea.classList.add('estado-tarea');
+            btnEstadoTarea.classList.add(`${estados[tarea.estado].toLowerCase()}`);// para que la clase sea en minuscula
+            btnEstadoTarea.textContent = estados[tarea.estado];
+            btnEstadoTarea.dataset.estadoTarea = tarea.estado;// atributo personalizado
+            //marcar y desmarcar las tareas como completas
+            btnEstadoTarea.ondblclick = function(){
+                //es una mala practica que js modifique el estado automaticamente
+                //para impedir eso hacemos una copia del objeto
+
+                cambiarEstadoTarea({...tarea}); //tarea actual
+            }
+            //boton eliminar tareas
+            const btnEliminarTarea = document.createElement('BUTTON');
+            btnEliminarTarea.classList.add('eliminar-tarea');
+            btnEliminarTarea.dataset.idTarea = tarea.id;
+            btnEliminarTarea.textContent = 'Eliminar';
+
+            //mostrar por pantalla
+            opcionesDiv.appendChild(btnEstadoTarea);
+            opcionesDiv.appendChild(btnEliminarTarea);
+            contenedorTarea.appendChild(nombreTarea);
+            contenedorTarea.appendChild(opcionesDiv);
+
+           const listadoTareas = document.querySelector('#listado-tareas'); // que es el ul
+           listadoTareas.appendChild(contenedorTarea); // que es el li
+        });
     }
 
     function mostrarFormulario(){
@@ -141,13 +195,64 @@
                 const modal = document.querySelector('.modal');
                 setTimeout(() => {
                     modal.remove();
+                    //una forma de recargar la pagina para que se muestren las nuevas tareas
+                    //pero se hace otra consulta al servidor y eso se debe evitar utilizando el virtualDOM
+                    //window.location.reload();
                 }, 3000);
+
+                //agregar el objeto de tarea al global de tareas
+                //primero lo construimos
+                const tareaObj = {
+                    id: String(resultado.id),
+                    nombre: tarea, // es la variable que se esta pasando hacia esta funcion
+                    estado: "0",
+                    proyectoId: resultado.proyectoId
+
+                }
+                //despues lo agragamos, toma una copia exacta del arreglo tareas y le añade el nuevo objeto
+                tareas = [...tareas, tareaObj];
+                //volvemos a mostrar las tareas
+                mostrarTareas();
             }
 
         } catch (error) {
             console.log(error);// solo para servidor
         }
 
+    }
+
+    function cambiarEstadoTarea(tarea){
+        const nuevoEstado = tarea.estado === "1" ? "0" : "1";
+        tarea.estado = nuevoEstado;
+        //por hacer copia del objeto se modificara solo la tarea actual pero no en el arreglo de tareas (quedara intacto)
+        //console.log(tarea); estado = 1;
+        //console.log(tareas); estado = 0;
+        actualizarTarea(tarea);
+    }
+
+    async function actualizarTarea(tarea){
+        const { estado, id, nombre, proyectoId } = tarea;
+        const datos = new FormData();
+        datos.append('id' , id);
+        datos.append('nombre' , nombre);
+        datos.append('estado' , estado);
+        datos.append('proyectoId' , obtenerProyecto()); //para comprobar la url
+
+        //la unica forma para iterrar dentro del FORMDATA
+        //for(let valor of datos.values()){
+        //    console.log(valor);
+        //}
+        try {
+            const url = 'http://localhost:3000/api/tarea/actualizar';
+            const respuesta = await fetch(url, {
+                method: "POST",
+                body: datos
+        });
+        const resultado = await respuesta.json();
+        console.log(respuesta);
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     function obtenerProyecto(){
@@ -157,6 +262,16 @@
         const proyecto = Object.fromEntries(proyectoParams.entries());
         return proyecto.url;
 
+    }
+
+    function limpiarTareas(){
+        const listadoTareas = document.querySelector('#listado-tareas');
+        //listadoTareas.innerHTML = ''; es mas lento
+
+        //es mas rapido, mientras haya tareas eliminalos una a una
+        while(listadoTareas.firstChild){
+            listadoTareas.removeChild(listadoTareas.firstChild);
+        }
     }
 
     

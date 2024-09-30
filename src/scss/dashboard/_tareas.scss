@@ -6,6 +6,58 @@
     .agregar-tarea{
         @include m.boton(v.$cyan, v.$blanco);
             
-        
+    }
+}
+
+.listado-tareas{
+    list-style: none;
+    padding:0;
+    margin-top: 3rem;
+    .no-tareas{
+        text-align: center;
+    }
+}
+
+.tarea{
+    padding:.5rem 2rem;
+    border-bottom:  2px solid darken(v.$gris-claro, 5%);
+    margin-bottom: 1rem;
+    display:flex;
+    justify-content: space-between;
+    align-items: center;
+    &:last-of-type{
+        border-bottom: none;
+    }
+
+    p{
+        font-size: 1.6rem;
+    }
+
+    .opciones{
+        display: flex;
+        gap:1rem;
+        button{
+            border:none;
+            font-size: 1.1rem;
+            padding: .5rem 1rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            border-radius: 1rem;
+            &:hover{
+                cursor:pointer;
+            }
+        }
+        .completa, .pendiente, .eliminar-tarea{
+            color:v.$blanco;
+        }
+        .completa{
+            background-color: v.$azul; 
+        }
+        .pendiente{
+            background-color: v.$naranja;
+        }
+        .eliminar-tarea{
+            background-color: v.$rojo;
+        }
     }
 }

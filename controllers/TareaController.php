@@ -64,7 +64,8 @@ class TareaController{
             $respuesta = [
                 'id' => $resultado['id'],
                 'tipo' => 'exito',
-                'mensaje' => 'Tarea creada correctamente'
+                'mensaje' => 'Tarea creada correctamente',
+                'proyectoId' => $proyecto->id // para poder crear el objeto virtual DOM
             ];
            
             echo json_encode($respuesta);
@@ -74,7 +75,15 @@ class TareaController{
 
     public static function actualizar(){
         if($_SERVER['REQUEST_METHOD'] === 'POST'){
-            
+        session_start();
+        //validar si el proyecto existe
+        $proyecto = Proyecto::where('url', $_POST['proyectoId']); 
+
+        if(!$proyecto || $proyecto->propietarioId !== $_SESSION['id']){
+
+        }
+
+            echo json_encode(['proyecto' => $proyecto]);
         }
     }
 
