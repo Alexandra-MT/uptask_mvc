@@ -8,7 +8,8 @@
     let tareas = [];
     //boton modal agragar tarea
     const nuevaTareaBtn = document.querySelector('#agregar-tarea');
-    nuevaTareaBtn.addEventListener('click', mostrarFormulario);
+    nuevaTareaBtn.addEventListener('click', function(){
+        mostrarFormulario()});//para mandar a llamar el parametro por default 
 
     async function obtenerTareas(){
        try {
@@ -56,6 +57,9 @@
 
             const nombreTarea = document.createElement('P');
             nombreTarea.textContent = tarea.nombre;
+            nombreTarea.ondblclick = function(){
+                mostrarFormulario(true, {...tarea});
+            }
 
             const opcionesDiv = document.createElement('DIV');
             opcionesDiv.classList.add('opciones');//estilos Css
@@ -78,6 +82,9 @@
             btnEliminarTarea.classList.add('eliminar-tarea');
             btnEliminarTarea.dataset.idTarea = tarea.id;
             btnEliminarTarea.textContent = 'Eliminar';
+            btnEliminarTarea.ondblclick = function(){
+                confirmarEliminarTarea({...tarea});
+            };
 
             //mostrar por pantalla
             opcionesDiv.appendChild(btnEstadoTarea);
@@ -90,19 +97,20 @@
         });
     }
 
-    function mostrarFormulario(){
+    function mostrarFormulario(editar = false, tarea = {}){
         const modal = document.createElement('DIV');
         modal.classList.add('modal');
         modal.innerHTML= 
         `
         <form class="formulario nueva-tarea">
-            <legend>Añade una nueva tarea</legend>
+            <legend>${editar ? 'Editar Tarea' : 'Añade una nueva tarea'}</legend>
             <div class="campo">
                 <label>Tarea</label>
-                <input type="text" name="tarea" placeholder="Añadir Tarea al Proyecto Actual" id="tarea" />
+                <input type="text" name="tarea" placeholder="${editar ? 'Modificar Nombre Tarea' : 'Añadir Tarea al Proyecto Actual'}" 
+                id="tarea" value="${tarea.nombre ? tarea.nombre : ''}" />
             </div>
             <div class="opciones">
-                <input type="submit" class="submit-nueva-tarea" value="Añadir Nueva Tarea" />
+                <input type="submit" class="submit-nueva-tarea" value="${editar ? 'Guardar Cambios' : 'Añadir Nueva Tarea'}" />
                 <button type="button" class="cerrar-modal">Cancelar</button>
             </div>
         </form>
@@ -112,7 +120,6 @@
             const formulario = document.querySelector('.formulario');
             formulario.classList.add('animar');
         },0);
-
 
         //delegation en js, cuando el texto ha sido generado con js(innerhtml) no se puede asociar addeventlistener por lo tanto con delegation se puede seleciconar un boton y darle funcionalidades
         //cuando utilizas scripting, mas event handlers .onclik
@@ -127,23 +134,30 @@
                
             }
             if(e.target.classList.contains('submit-nueva-tarea')){
-                submitFormularioNuevaTarea();
+                const nombreTarea = document.querySelector('#tarea').value.trim();//trim para espacios, eliminarlos
+                
+                if(nombreTarea === ''){ //esto incluye los espacios
+                    //mostrar alerta de error
+                    mostrarAlerta('El nombre de la tarea es obligatorio', 'error', document.querySelector('.formulario legend'));
+                    return; //para que no se ejecute las siguientes lineas de codigo
+                }
+
+                if(editar){
+                    //reescribimos el nombre de la tarea
+                    tarea.nombre = nombreTarea;
+                    actualizarTarea(tarea); //necesita el objeto
+                }else{
+                    agregarTarea(nombreTarea);//solo necesita el nombre de la tarea
+                }
             }
-        });
+        })
 
         document.querySelector('.dashboard').appendChild(modal);
-    }
 
-    function submitFormularioNuevaTarea(){
-        const tarea = document.querySelector('#tarea').value.trim();//trim para espacios, eliminarlos
-        if(tarea === ''){ //esto incluye los espacios
-            //mostrar alerta de error
-            mostrarAlerta('El nombre de la tarea es obligatorio', 'error', document.querySelector('.formulario legend'));
-            return; //para que no se ejecute las siguientes lineas de codigo
+        function ponleFocus(){
+            document.getElementById('tarea').focus();
         }
-
-        agregarTarea(tarea);
-       
+        ponleFocus();
     }
     //muestra un mensaje en la interfaz
     function mostrarAlerta(mensaje, tipo, referencia){ //referencia apunta a en que parte del documento se añade la alerta
@@ -249,10 +263,73 @@
                 body: datos
         });
         const resultado = await respuesta.json();
-        console.log(respuesta);
+        
+        if(resultado.tipo === 'exito'){
+            //mostrarAlerta(resultado.mensaje, resultado.tipo, document.querySelector('.contenedor-nueva-tarea'));
+            Swal.fire(resultado.mensaje,resultado.mensaje, 'success');
+
+            //cerramos la ventana modal
+            const modal = document.querySelector('.modal');
+            //solo si esta la ventana modal
+            if(modal){
+                modal.remove();
+            }
+
+            tareas = tareas.map(tareaMemoria => {
+                //tareaMemoria traera todas las tareas asi que comparamos si algun id coincide con el id de la tarea donde hacemos click
+                if(tareaMemoria.id === id){
+                    tareaMemoria.estado = estado;
+                    tareaMemoria.nombre = nombre;
+                }
+                return tareaMemoria; //para que asigne al nuevo arreglo
+            }); //crea un nuevo arreglo ya con la actualizacion 
+
+            //mostramos en pantalla
+            mostrarTareas();
+        }
         } catch (error) {
             console.log(error);
         }
+    }
+
+    function confirmarEliminarTarea(tarea){
+        Swal.fire({
+            title: "¿Eliminar Tarea?",
+            showCancelButton: true,
+            confirmButtonText: "Si",
+            cancelButtonText: "No"
+          }).then((result) => {
+            if (result.isConfirmed) {
+                eliminarTarea(tarea);
+            } 
+          });
+    }
+
+    async function eliminarTarea(tarea){
+        const { estado, id, nombre} = tarea;
+        const datos = new FormData();
+        datos.append('id', id);
+        datos.append('nombre', nombre);
+        datos.append('estado', estado);
+        datos.append('proyectoId', obtenerProyecto());
+
+       try {
+            const url = 'http://localhost:3000/api/tarea/eliminar';
+            const respuesta = await fetch(url, {
+                method : 'POST',
+                body: datos
+            });
+            const resultado = await respuesta.json();
+            if(resultado.tipo === 'exito'){
+                //mostrarAlerta(resultado.mensaje, resultado.tipo, document.querySelector('.contenedor-nueva-tarea')); 
+                Swal.fire('Eliminado!', resultado.mensaje, 'success');
+
+                tareas = tareas.filter( tareaMemoria => tareaMemoria.id !== tarea.id);
+                mostrarTareas();
+            }
+       } catch (error) {
+            console.log(error);
+       }
     }
 
     function obtenerProyecto(){

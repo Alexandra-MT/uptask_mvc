@@ -80,16 +80,60 @@ class TareaController{
         $proyecto = Proyecto::where('url', $_POST['proyectoId']); 
 
         if(!$proyecto || $proyecto->propietarioId !== $_SESSION['id']){
-
+            $respuesta = [
+                'tipo' => 'error',
+                'mensaje' => 'Hubo un error al actualizar la tarea'
+            ];
+            echo json_encode($respuesta);
+            return;
         }
 
-            echo json_encode(['proyecto' => $proyecto]);
+        //instanciar la tarea con el nuevo estado
+        $tarea = new Tarea($_POST);
+        $tarea->proyectoId = $proyecto->id;
+        $resultado = $tarea->guardar();
+        if($resultado){
+            $respuesta = [
+                'id' => $tarea->id, // en ActiveRecord al momento de actualizar no devuelve el id, como en el caso de crear, necesitamos pasar como valor el id de la tarea
+                'tipo' => 'exito',
+                'mensaje' => 'Actualizado correctamente',
+                'proyectoId' => $proyecto->id
+            ];
+            echo json_encode($respuesta);
+        }
+
         }
     }
 
     public static function eliminar(){
         if($_SERVER['REQUEST_METHOD'] === 'POST'){
+            session_start();
+
+            $proyecto = Proyecto::where('url', $_POST['proyectoId']);
+
+            if(!$proyecto || $proyecto->propietarioId !== $_SESSION['id']){
+                $respuesta =[
+                    'tipo' => 'error',
+                    'mensaje' => 'Hubo un error al eliminar la tarea', 
+                ];
+                echo json_encode($respuesta);
+                return;  
+            }
+
+            $tarea = new Tarea($_POST);
+            $tarea->proyectoId = $proyecto->id;// aqui ya no es necesario el cambio ya que lo elimina solo con el id
+            $resultado = $tarea->eliminar();
+
+            if($resultado){
+                $respuesta = [
+                    'tipo' => 'exito',
+                    'mensaje' => 'tarea eliminada correctamente'
+
+                ];
+            }
             
+
+            echo json_encode($respuesta);
         }
     }
 
