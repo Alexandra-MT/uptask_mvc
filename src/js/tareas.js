@@ -6,10 +6,33 @@
     //por lo tanto la funcion de agragar tarea no conoce el contenido de las tareas
     //se crea un variable global
     let tareas = [];
+    let filtradas = [];
     //boton modal agragar tarea
     const nuevaTareaBtn = document.querySelector('#agregar-tarea');
     nuevaTareaBtn.addEventListener('click', function(){
         mostrarFormulario()});//para mandar a llamar el parametro por default 
+
+    //Filtros de busqueda
+    const filtros = document.querySelectorAll('#filtros input[type="radio"]');
+    //console.log(filtros);
+    filtros.forEach( radio => {
+        radio.addEventListener('input', filtrarTareas);
+    });
+
+    function filtrarTareas(e){
+        //console.log(e); muestra cada input
+        const filtro = e.target.value;// 0 1 ""
+
+        if(filtro !== ""){
+            //pendientes o completas
+            filtradas = tareas.filter( tarea => tarea.estado === filtro);
+        }else{
+            filtradas = [];
+        }
+        //console.log(filtradas);
+
+        mostrarTareas();
+    }
 
     async function obtenerTareas(){
        try {
@@ -34,7 +57,14 @@
     function mostrarTareas(){ //(tareas) pero como ya es global no se necesita
         //para que no se dupliquen las tareas, debemos limpiar el html
         limpiarTareas();
-        if(tareas.length === 0){
+
+        totalPendientes();
+        totalCompletas();
+
+        //para poder filtrar, si el arreglo filtradas tiene algo entonces se muestra si no tiene se muestran las tareas
+        const arrayTareas = filtradas.length ? filtradas : tareas;
+
+        if(arrayTareas.length === 0){
             //si no hay tareas
             const contenedorTareas = document.querySelector('#listado-tareas');
             const textoNoTareas = document.createElement('LI');
@@ -50,7 +80,7 @@
             1 : 'Completa'
         }
 
-        tareas.forEach(tarea => {
+        arrayTareas.forEach(tarea => {
             const contenedorTarea = document.createElement('LI');
             contenedorTarea.dataset.tareaId = tarea.id;// lo hemos sacado del objeto
             contenedorTarea.classList.add('tarea');
@@ -95,6 +125,48 @@
            const listadoTareas = document.querySelector('#listado-tareas'); // que es el ul
            listadoTareas.appendChild(contenedorTarea); // que es el li
         });
+    }
+
+    function totalPendientes(){
+        const totalPendientes = tareas.filter(tarea => tarea.estado === '0');
+        const pendientesRadio = document.querySelector('#pendientes');
+        
+        if(totalPendientes.length === 0){
+            pendientesRadio.disabled = true;
+        }else{
+            pendientesRadio.disabled = false;
+        }
+    }
+
+    function totalCompletas(){
+        const totalCompletas = tareas.filter(tarea => tarea.estado === '1');
+        const completasRadio = document.querySelector('#completadas');
+        
+        if(totalCompletas.length === 0){
+            completasRadio.disabled = true;
+        }else{
+            completasRadio.disabled = false;
+        }
+    }
+
+
+    
+    function filtroActivo() {
+     
+        // Revisa si hay un filtro activo
+        const filtroActivo = document.querySelector('input[name="filtro"]:checked').value;
+     
+        if(filtroActivo) {
+     
+            // Filtra nuevamente
+            filtradas = tareas.filter(tarea => tarea.estado === filtroActivo);
+     
+            // Si 'completas' o 'pendientes' es igual a 0 tareas, pasa a el filtro 'todas'
+            if(!filtradas.length) {
+                radiobtn = document.getElementById("todas");
+                radiobtn.checked = true;
+            }
+        }
     }
 
     function mostrarFormulario(editar = false, tarea = {}){
@@ -225,6 +297,8 @@
                 }
                 //despues lo agragamos, toma una copia exacta del arreglo tareas y le añade el nuevo objeto
                 tareas = [...tareas, tareaObj];
+                //filtro
+                filtroActivo();
                 //volvemos a mostrar las tareas
                 mostrarTareas();
             }
@@ -284,6 +358,8 @@
                 return tareaMemoria; //para que asigne al nuevo arreglo
             }); //crea un nuevo arreglo ya con la actualizacion 
 
+            //filtro
+            filtroActivo();
             //mostramos en pantalla
             mostrarTareas();
         }
@@ -325,6 +401,8 @@
                 Swal.fire('Eliminado!', resultado.mensaje, 'success');
 
                 tareas = tareas.filter( tareaMemoria => tareaMemoria.id !== tarea.id);
+                //filtro
+                filtroActivo();
                 mostrarTareas();
             }
        } catch (error) {
