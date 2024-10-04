@@ -3,6 +3,7 @@
 namespace Controllers;
 
 use MVC\Router;
+use Classes\Email;
 use Model\Usuario;
 use Model\Proyecto;
 
@@ -94,26 +95,96 @@ class DashboardController{
 
             if(empty($alertas)){
 
-                $resultado = $usuario->guardar();
+                $emailRegistrado = $_SESSION['email'];
+                $emailNuevo = $usuario->email;
+                $nombreNuevo = $usuario->nombre;
 
-                if(!$resultado){
-                    Usuario::setAlerta('error', 'Los cambios no se pudieron guardar');
+                if($emailRegistrado !== $emailNuevo){
+                //verificar si el email que estan colocando no pertenezca a otro usuario
+                $existeUsuario = Usuario::where('email', $usuario->email);
+
+                if($existeUsuario && $existeUsuario->id !== $usuario->id){
+                    Usuario::setAlerta('error', 'El correo electronico ya existe');
                 }else{
-                    Usuario::setAlerta('exito' , 'Guardado Correctamente');
+                    $usuario->token();
+                    $usuario->confirmado = 0;
+                    $resultado = $usuario->guardar();
+                    if($resultado){
+                        $email = new Email($usuario->email, $usuario->nombre, $usuario->token);
+                        $email->enviarConfirmacion();
+                        Usuario::setAlerta('exito', 'Hemos enviado las instrucciones a tu correo 
+                        para confirmar tu cuenta. Recuerda confirmar antes de iniciar sesión.');
+                    }
                 }
-
-                //asignar nuevos valores a la barra
-                $_SESSION['nombre'] = $usuario->nombre;
-                $_SESSION['email'] = $usuario->email;
+            }else{
+                if(strlen($nombreNuevo) >= 40){
+                    Usuario::setAlerta('error', 'Maximo 40 caracteres');
+                }else{
+                    $usuario->guardar();
+                    Usuario::setAlerta('exito', 'Perfil actualizado correctamente.');
+                }
             }
-        }
-
-        $alertas = Usuario::getAlertas();
+                    //asignar nuevos valores a la barra
+                    $_SESSION['nombre'] = $usuario->nombre;
+                    $_SESSION['email'] = $usuario->email;
+                    $alertas = Usuario::getAlertas();
+                }  
+            }
 
         $router->render('dashboard/perfil',[
             'titulo' => 'Perfil',
             'alertas' => $alertas,
             'usuario' => $usuario
+        ]);
+    }
+
+    public static function cambiar_password(Router $router){
+        session_start();
+        isAuth();
+        $alertas = [];
+
+        if($_SERVER['REQUEST_METHOD'] === 'POST'){
+            $usuario = Usuario::find($_SESSION['id']);
+
+            //sincronizar con los datos del usuario;
+            $usuario->sincronizar($_POST);
+
+            $alertas = $usuario->nuevo_password();
+            //debuguear($usuario);
+
+            if(empty($alertas)){
+                $resultado = $usuario->comprobar_password();
+                if($resultado){
+                   //Asignar el nuevo password
+                   $usuario->password = $usuario->password_nuevo;
+
+                   //Eliminar propiedades no necesarias
+                   unset($usuario->password_actual);
+                   unset($usuario->password_nuevo);
+
+                   //Hashear el nuevo password
+                   $usuario->hashPassword();
+
+                   //Actualizar
+                   $resultado = $usuario->guardar();
+
+                   if($resultado){
+                        Usuario::setAlerta('exito', 'Password actualizado correctamente');
+                   }else{
+                        Usuario::setAlerta('error', 'Hubo un error');
+                   }
+                   
+                }else{
+                    Usuario::setAlerta('error', 'Password Incorrecto');
+                }
+            }
+            $alertas = Usuario::getAlertas();
+        }
+
+        $router->render('dashboard/cambiar-password',[
+            'titulo' => 'Cambiar Password',
+            'alertas' => $alertas,
+
         ]);
     }
 }

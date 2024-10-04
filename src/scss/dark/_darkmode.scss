@@ -1,0 +1,71 @@
+@use 'base/variables' as v;
+@use 'base/mixins' as m;
+
+@media (prefers-color-scheme: dark){
+    $grisOscuro: #2c2c3b;
+    body{
+        background-color: $grisOscuro;
+    }
+
+    .login, .crear, .olvide{
+
+        .uptask, .tagline{
+        background: -webkit-linear-gradient(red,yellow);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: tomato; 
+        }
+
+        .descripcion-pagina,
+        .formulario .campo label{
+            color:v.$gris-claro;
+        }
+
+        input[type="submit"]{
+            background-color:darken(orange, 5%);
+            &:hover{
+                background-color:darken(orange, 15%);
+            }
+        }
+
+        .acciones a{
+            color:orange;
+        }
+
+        .alerta.error{
+            background-color: v.$blanco;
+        }
+    }
+
+    .barra-mobile{
+        background-color: darken($grisOscuro, 7%);
+    }
+
+    .filtros{
+        background-color: lighten($grisOscuro, 50%);
+
+        label{
+            color:v.$blanco;
+        }
+    }
+
+    .listado-tareas .tarea{
+        //background-color: lighten($grisOscuro, 50%);
+        p{
+            color:v.$blanco;
+        }
+    }
+    .dashboard{
+        background-color: $grisOscuro;
+        .nombre-pagina,
+        .formulario .campo label,
+        .enlace{
+            color:v.$gris-claro;
+        }
+
+        .alerta.error{
+            color:v.$blanco;
+        }
+    }
+
+}
